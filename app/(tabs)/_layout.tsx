@@ -17,7 +17,7 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
-        name="game"
+        name="index"
         options={{
           title: 'Spil',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
