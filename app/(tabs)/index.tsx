@@ -1,4 +1,6 @@
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
+import { Magnetometer } from 'expo-sensors';
 import { Platform, StyleSheet } from 'react-native';
 
 import { HelloWave } from '@/components/hello-wave';
@@ -9,45 +11,85 @@ import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 export default function Screen() {
-  const [headingValue, setHeadingValue] = useState(0);
+  const [heading, setHeading] = useState(0);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      interface DeviceOrientationEvent extends Event {
-        webkitCompassHeading?: number;
-        alpha?: number;
-      }
-
-      const handleOrientation = (event: DeviceOrientationEvent) => {
-        const heading =
-          event.webkitCompassHeading ??  // iOS Safari
-          360 - (event.alpha ?? 0);       // Chrome / Android
-
-        console.log('Heading:', heading);
-        setHeadingValue(heading);
-      };
-
-      window.addEventListener('deviceorientation', handleOrientation, true);
-
-      return () => {
-        window.removeEventListener('deviceorientation', handleOrientation);
-      };
+      return;
     }
 
-    const degree_update_rate = 3;
-    let CompassHeading: any;
+    Magnetometer.setUpdateInterval(100);
+
+    const subscription = Magnetometer.addListener((data) => {
+      let angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
+      angle = angle >= 0 ? angle : angle + 360;
+      setHeading(Math.round(angle));
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const [lat, setLat] = useState(0);
+  const [long, setLong] = useState(0);
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    let subscription: Location.LocationSubscription | null = null;
+
     (async () => {
-      CompassHeading = (await import('react-native-compass-heading')).default;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
 
-      CompassHeading.start(degree_update_rate, ({ heading }: { heading: number }) => {
-        setHeadingValue(heading);
-      });
+      /*
+      const location = await Location.getCurrentPositionAsync({});
+        setLat(location.coords.latitude);
+        setLong(location.coords.longitude);
+      */
+
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 5000,
+          distanceInterval: 1,
+        },
+        (location) => {
+          setLat(location.coords.latitude);
+          setLong(location.coords.longitude);
+        }
+      );
     })();
-
+    
     return () => {
-      CompassHeading?.stop?.();
+      subscription?.remove();
     };
   }, []);
+
+  if (Platform.OS === 'web') {
+    return (
+      <ParallaxScrollView
+      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerImage={
+        <Image
+          source={require('@/assets/images/partial-react-logo.png')}
+          style={styles.reactLogo}
+        />
+      }
+      headerTitle="Spil">
+      <ThemedView style={styles.titleContainer}>
+        <ThemedText type="title">Welcome!</ThemedText>
+        <HelloWave />
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
+        <ThemedText>
+          sd
+        </ThemedText>
+      </ThemedView>
+    </ParallaxScrollView>
+    )
+  }
 
   return (
     <ParallaxScrollView
@@ -81,7 +123,17 @@ export default function Screen() {
         */}
         <ThemedText>
           {`Current Compass Heading: `}
-          <ThemedText type="defaultSemiBold">{headingValue.toFixed(2)}°</ThemedText>
+          <ThemedText type="defaultSemiBold">{heading.toFixed(2)}°</ThemedText>
+        </ThemedText>
+        
+        <ThemedText>
+          {`Lat: `}
+          <ThemedText type="defaultSemiBold">{lat.toFixed(10)}°</ThemedText>
+        </ThemedText>
+        
+        <ThemedText>
+          {`Long: `}
+          <ThemedText type="defaultSemiBold">{long.toFixed(10)}°</ThemedText>
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>

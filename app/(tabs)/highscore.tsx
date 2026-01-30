@@ -1,4 +1,6 @@
-import { FlatList, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -6,10 +8,91 @@ import { ThemedView } from '@/components/themed-view';
 import HighScoreItem from '@/components/ui/high-score-item';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
+import { useEffect, useState } from 'react';
+
+type ScoreEntry = {
+  player_name: string;
+  score: number;
+  challenge_date: string
+};
+
+type ScoresByDay = {
+  today?: ScoreEntry[];
+  yesterday?: ScoreEntry[];
+  general?: ScoreEntry[];
+  [key: string]: ScoreEntry[] | undefined;
+};
 
 export default function Screen() {
-  const sortedScores = [...scores].sort((a, b) => b.score - a.score);
-  const maxScore = sortedScores[0]?.score ?? 1;
+  const [scoresByDay, setScoresByDay] = useState<ScoresByDay>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const SCORES_KEY = "@scores";
+  const API_URL = "https://spil.qeentu.com/jims/gaetRetningApi/leaderboard.php";
+
+  const normalizeScores = (data: Record<string, ScoreEntry[]>) => {
+    const result: Record<string, Array<ScoreEntry>> = {};
+    Object.entries(data).forEach(([day, arr]) => {
+      result[day] = arr
+        .sort((a, b) => b.score - a.score);
+    });
+    return result;
+  };
+
+  const fetchScores = async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error("Failed to fetch scores");
+
+      const data = await response.json();
+      const normalized = normalizeScores(data);
+
+      setScoresByDay(normalized);
+      await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(normalized));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    }
+  };
+
+  const loadScores = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SCORES_KEY);
+      if (stored) setScoresByDay(JSON.parse(stored));
+
+      const netState = await NetInfo.fetch();
+      if (netState.isConnected) {
+        await fetchScores();
+      }
+
+      // await new Promise(r => setTimeout(r, 2000));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadScores();
+
+    const interval = setInterval(async () => {
+      const netState = await NetInfo.fetch();
+      if (netState.isConnected) await fetchScores();
+    }, 5_000);
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) fetchScores();
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, []);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (error) return <ThemedText>{error}</ThemedText>;
 
   return (
     <ParallaxScrollView
@@ -37,12 +120,12 @@ export default function Screen() {
         </ThemedText>
       </ThemedView>
       <FlatList
-        data={sortedScores}
+        data={scoresByDay['today'] || []}
         renderItem={({ item }) => (
           <HighScoreItem
-            name={item.name}
+            name={item.player_name}
             score={item.score}
-            maxScore={maxScore}
+            maxScore={scoresByDay['today'] && scoresByDay['today'].length > 0 ? Math.max(...scoresByDay['today'].map(s => s.score)) : 0}
           />
         )}
       />
@@ -60,12 +143,12 @@ export default function Screen() {
         </ThemedText>
       </ThemedView>
       <FlatList
-        data={sortedScores}
+        data={scoresByDay['yesterday'] || []}
         renderItem={({ item }) => (
           <HighScoreItem
-            name={item.name}
+            name={item.player_name}
             score={item.score}
-            maxScore={maxScore}
+            maxScore={scoresByDay['yesterday'] && scoresByDay['yesterday'].length > 0 ? Math.max(...scoresByDay['yesterday'].map(s => s.score)) : 0}
           />
         )}
       />
@@ -83,30 +166,18 @@ export default function Screen() {
         </ThemedText>
       </ThemedView>
       <FlatList
-        data={sortedScores}
+        data={scoresByDay['general'] || []}
         renderItem={({ item }) => (
           <HighScoreItem
-            name={item.name}
+            name={item.player_name}
             score={item.score}
-            maxScore={maxScore}
+            maxScore={scoresByDay['general'] && scoresByDay['general'].length > 0 ? Math.max(...scoresByDay['general'].map(s => s.score)) : 0}
           />
         )}
       />
     </ParallaxScrollView>
   );
 }
-
-interface ScoreItem {
-  name: string;
-  score: number;
-}
-
-const scores: ScoreItem[] = [
-  { name: "PlayerOne", score: 370 },
-  { name: "PlayerTwo", score: 820 },
-  { name: "PlayerThree", score: 640 },
-  { name: "PlayerFour", score: 990 },
-];
 
 const styles = StyleSheet.create({
   headerImage: {
