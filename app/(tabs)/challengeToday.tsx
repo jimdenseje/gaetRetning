@@ -4,11 +4,36 @@ import { Platform, StyleSheet } from 'react-native';
 import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Collapsible } from '@/components/ui/collapsible';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 
 export default function Screen() {
+
+  if (Platform.OS === 'web') {
+    return (
+      <ParallaxScrollView
+      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerImage={
+        <IconSymbol
+          size={220}
+          color="#808080"
+          name="chevron.left.forwardslash.chevron.right"
+          style={styles.headerImage}
+        />
+      }
+      headerTitle='I dags spil'>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Manglende funktion</ThemedText>
+        <ThemedText>
+          Din platform understøtter ikke kompassfunktionen
+        </ThemedText>
+      </ThemedView>
+    </ParallaxScrollView>
+    )
+  }
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -90,6 +115,10 @@ export default function Screen() {
 }
 
 const styles = StyleSheet.create({
+  stepContainer: {
+    gap: 8,
+    marginBottom: 8,
+  },
   headerImage: {
     color: '#808080',
     bottom: -90,

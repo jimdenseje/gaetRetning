@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -42,7 +42,7 @@ export default function Screen() {
 
   const fetchScores = async () => {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_URL, { signal: AbortSignal.timeout(1000) });
       if (!response.ok) throw new Error("Failed to fetch scores");
 
       const data = await response.json();
@@ -51,7 +51,7 @@ export default function Screen() {
       setScoresByDay(normalized);
       await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(normalized));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      //setError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
@@ -63,6 +63,8 @@ export default function Screen() {
       const netState = await NetInfo.fetch();
       if (netState.isConnected) {
         await fetchScores();
+      } else {
+        //setError("No internet connection. Showing cached scores.");
       }
 
       // await new Promise(r => setTimeout(r, 2000));
@@ -153,28 +155,33 @@ export default function Screen() {
         )}
       />
 
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}
-          lightColor='#004d0f'
-          darkColor='#00d40b'
-          >
-          Generalt spil
-        </ThemedText>
-      </ThemedView>
-      <FlatList
-        data={scoresByDay['general'] || []}
-        renderItem={({ item }) => (
-          <HighScoreItem
-            name={item.player_name}
-            score={item.score}
-            maxScore={scoresByDay['general'] && scoresByDay['general'].length > 0 ? Math.max(...scoresByDay['general'].map(s => s.score)) : 0}
+      {Platform.OS !== 'web' && (
+        <>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText
+              type="title"
+              style={{
+                fontFamily: Fonts.rounded,
+              }}
+              lightColor='#004d0f'
+              darkColor='#00d40b'
+              >
+              Generalt spil
+            </ThemedText>
+          </ThemedView>
+          <FlatList
+            data={scoresByDay['general'] || []}
+            renderItem={({ item }) => (
+              <HighScoreItem
+                name={item.player_name}
+                score={item.score}
+                maxScore={scoresByDay['general'] && scoresByDay['general'].length > 0 ? Math.max(...scoresByDay['general'].map(s => s.score)) : 0}
+              />
+            )}
           />
-        )}
-      />
+        </>
+      )}
+
     </ParallaxScrollView>
   );
 }

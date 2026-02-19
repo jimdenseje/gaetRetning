@@ -77,14 +77,10 @@ export default function Screen() {
         />
       }
       headerTitle="Spil">
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
+        <ThemedText type="subtitle">Manglende funktion</ThemedText>
         <ThemedText>
-          sd
+          Din platform understøtter ikke kompassfunktionen
         </ThemedText>
       </ThemedView>
     </ParallaxScrollView>
@@ -107,20 +103,6 @@ export default function Screen() {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        {/* 
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-        */}
         <ThemedText>
           {`Current Compass Heading: `}
           <ThemedText type="defaultSemiBold">{heading.toFixed(2)}°</ThemedText>
