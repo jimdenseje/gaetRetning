@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import React, { useContext, useState } from 'react';
-import { Button, StyleSheet, TextInput, useColorScheme } from 'react-native';
+import { StyleSheet, TextInput, useColorScheme } from 'react-native';
 import { UserContext } from '../context/UserContext';
 
 export default function LoginScreen() {
@@ -39,6 +39,14 @@ export default function LoginScreen() {
       flexDirection: 'row',
       gap: 8,
     },
+    button: {
+      backgroundColor: colorScheme === 'dark' ? '#1D3D47' : '#A1CEDC',
+      marginBottom: 28,
+      padding: 8,
+      borderRadius: 8,
+      textAlign: 'center',
+      fontWeight: 'bold',
+    },
   });
 
   return (
@@ -53,6 +61,7 @@ export default function LoginScreen() {
             />
           }
           headerTitle=""
+          cached={false}
     >
           <ThemedView style={styles.stepContainer}>
             <ThemedText type="subtitle">Et brugernavn er påkrævet for at spille</ThemedText>
@@ -63,12 +72,11 @@ export default function LoginScreen() {
                 style={styles.input}
             />
 
-            <Button 
-                color={colorScheme === 'dark' ? '#025706' : '#00d42a'}
-                title="Continue"
-                onPress={() => setUsername(name)}
-                disabled={!name.trim()}
-            />
+            <ThemedText
+              style={styles.button}
+              onPress={() => setUsername(name)}
+              disabled={!name.trim()}
+            >Opret</ThemedText>
           </ThemedView>
 
     </ParallaxScrollView>

@@ -19,6 +19,7 @@ type Props = PropsWithChildren<{
   headerImage: ReactElement;
   headerBackgroundColor: { dark: string; light: string };
   headerTitle: string;
+  cached: boolean;
 }>;
 
 export default function ParallaxScrollView({
@@ -26,6 +27,7 @@ export default function ParallaxScrollView({
   headerImage,
   headerBackgroundColor,
   headerTitle,
+  cached,
 }: Props) {
   const backgroundColor = useThemeColor({}, 'background');
   const colorScheme = useColorScheme() ?? 'light';
@@ -62,6 +64,21 @@ export default function ParallaxScrollView({
 
           {headerImage}
         
+          <ThemedText
+                type="title"
+                style={{
+                  fontFamily: Fonts.rounded,
+                  right: 20,
+                  bottom: 52,
+                  fontSize: 16,
+                  position: 'absolute',
+                }}
+                lightColor='#4b4b4b'
+                darkColor='#e0e0e0'
+                >
+                {cached && "offline"}
+          </ThemedText>
+
           <ThemedText
                 type="title"
                 style={{

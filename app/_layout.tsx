@@ -26,7 +26,7 @@ function AppLayout() {
   const { username } = useContext(UserContext);
   const colorScheme = useColorScheme();
 
-  //console.log('Current username:', username);
+  console.log('Current username:', username);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

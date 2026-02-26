@@ -9,6 +9,7 @@ import HighScoreItem from '@/components/ui/high-score-item';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 import { useEffect, useState } from 'react';
+import { getLocalScores, LocalScore } from '../helper/LocalStore';
 
 type ScoreEntry = {
   player_name: string;
@@ -27,6 +28,8 @@ export default function Screen() {
   const [scoresByDay, setScoresByDay] = useState<ScoresByDay>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cached, setCached] = useState(true);
+  const [scores, setScores] = useState<LocalScore[]>([]);
 
   const SCORES_KEY = "@scores";
   const API_URL = "https://spil.qeentu.com/jims/gaetRetningApi/leaderboard.php";
@@ -42,7 +45,7 @@ export default function Screen() {
 
   const fetchScores = async () => {
     try {
-      const response = await fetch(API_URL, { signal: AbortSignal.timeout(1000) });
+      const response = await fetch(API_URL, {signal: AbortSignal.timeout(10000)});
       if (!response.ok) throw new Error("Failed to fetch scores");
 
       const data = await response.json();
@@ -50,6 +53,7 @@ export default function Screen() {
 
       setScoresByDay(normalized);
       await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(normalized));
+      setCached(false);
     } catch (err) {
       //setError(err instanceof Error ? err.message : "An error occurred");
     }
@@ -59,19 +63,20 @@ export default function Screen() {
     try {
       const stored = await AsyncStorage.getItem(SCORES_KEY);
       if (stored) setScoresByDay(JSON.parse(stored));
+      setLoading(false);
 
       const netState = await NetInfo.fetch();
       if (netState.isConnected) {
         await fetchScores();
       } else {
+        console.warn("No internet connection. Showing cached scores.");
         //setError("No internet connection. Showing cached scores.");
       }
 
-      // await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error loading scores:", err);
+      //setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setLoading(false);
     }
   };
 
@@ -83,13 +88,25 @@ export default function Screen() {
       if (netState.isConnected) await fetchScores();
     }, 5_000);
 
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected) fetchScores();
-    });
-
     return () => {
       clearInterval(interval);
-      unsubscribe();
+    };
+  }, []);
+
+  const loadLocalScores = async () => {
+    const data = await getLocalScores();
+    setScores(data);
+  };
+
+  useEffect(() => {
+    loadLocalScores();
+    
+    const localInterval = setInterval(async () => {
+      loadLocalScores();
+    }, 100);
+
+    return () => {
+      clearInterval(localInterval);
     };
   }, []);
 
@@ -108,6 +125,7 @@ export default function Screen() {
         />
       }
       headerTitle="Highscore"
+      cached={cached}
       >
       <ThemedView style={styles.titleContainer}>
         <ThemedText
@@ -166,16 +184,17 @@ export default function Screen() {
               lightColor='#004d0f'
               darkColor='#00d40b'
               >
-              Generalt spil
+              Lokal highscore
             </ThemedText>
           </ThemedView>
           <FlatList
-            data={scoresByDay['general'] || []}
+            data={scores}
+            keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }) => (
               <HighScoreItem
-                name={item.player_name}
+                name={item.date}
                 score={item.score}
-                maxScore={scoresByDay['general'] && scoresByDay['general'].length > 0 ? Math.max(...scoresByDay['general'].map(s => s.score)) : 0}
+                maxScore={scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0}
               />
             )}
           />
