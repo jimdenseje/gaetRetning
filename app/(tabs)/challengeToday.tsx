@@ -249,7 +249,7 @@ export default function Screen() {
         </ThemedText>
 
         <ThemedText>
-          Åbn fanen <Link href="/highscore" style={styles.link}>Highscore</Link> for at se dagens resultater.
+          Åbn fanen <Link href="/highscore" style={styles.link}>Rangliste</Link> for at se dagens resultater.
         </ThemedText>
 
         */}

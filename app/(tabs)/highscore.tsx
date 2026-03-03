@@ -124,7 +124,7 @@ export default function Screen() {
           style={styles.headerImage}
         />
       }
-      headerTitle="Highscore"
+      headerTitle="Rangliste"
       cached={cached}
       >
       <ThemedView style={styles.titleContainer}>
@@ -184,7 +184,7 @@ export default function Screen() {
               lightColor='#004d0f'
               darkColor='#00d40b'
               >
-              Lokal highscore
+              Lokal Rangliste
             </ThemedText>
           </ThemedView>
           <FlatList
