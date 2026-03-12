@@ -103,7 +103,7 @@ export default function Screen() {
     
     const localInterval = setInterval(async () => {
       loadLocalScores();
-    }, 100);
+    }, 500);
 
     return () => {
       clearInterval(localInterval);
