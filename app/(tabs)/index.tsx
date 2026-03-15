@@ -1,15 +1,13 @@
-import { Image } from 'expo-image';
-import * as Location from 'expo-location';
-import { Magnetometer } from 'expo-sensors';
-import { Platform, StyleSheet, useColorScheme } from 'react-native';
-
 import { bearingToQuadrant } from '@/app/helper/CompassHelper';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { UserContext } from '@/context/UserContext';
+import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { Magnetometer } from 'expo-sensors';
+import { useEffect, useState } from 'react';
+import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import { getPoint } from '../helper/GetPointHelper';
 import { addLocalScore } from '../helper/LocalStore';
 
@@ -22,7 +20,6 @@ function randomInt(min: number, max: number): number {
 
 export default function Screen() {
   const colorScheme = useColorScheme();
-  const { username } = useContext(UserContext);
   const [heading, setHeading] = useState(0);
   const [bearing, setBearing] = useState(0);
 
@@ -81,16 +78,16 @@ export default function Screen() {
   if (Platform.OS === 'web') {
     return (
       <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-      headerTitle="Spil"
-      cached={false}
-    >
+        headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+        headerImage={
+          <Image
+            source={require('@/assets/images/partial-react-logo.png')}
+            style={styles.reactLogo}
+          />
+        }
+        headerTitle="Spil"
+        cached={false}
+      >
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Manglende funktion</ThemedText>
         <ThemedText>
@@ -102,7 +99,7 @@ export default function Screen() {
   }
 
   useEffect(() => {
-    setBearing(randomInt(0, 360)); //random bearing
+    setBearing(randomInt(0, 360));
 
     if (Platform.OS === 'web') {
       return;

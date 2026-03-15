@@ -10,16 +10,20 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { UserContext } from '@/context/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useContext, useEffect, useState } from 'react';
 import { getPoint } from '../helper/GetPointHelper';
 
 export default function Screen() {
   const colorScheme = useColorScheme();
-  const { username } = useContext(UserContext);
+  const { username, token } = useContext(UserContext);
   const [loading, setLoading] = useState(true);
   const [heading, setHeading] = useState(0);
   const [bearing, setBearing] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [lastChallengeDone, setLastChallengeDone] = useState<string | null>(null);
+
+  const LAST_CHALLENGE_DONE = "@last_challenge_done";
 
   const styles = StyleSheet.create({
     link: {
@@ -72,18 +76,21 @@ export default function Screen() {
     },
   });
 
-  {/*
   if (Platform.OS === 'web') {
     return (
       <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-      headerTitle="Spil">
+        headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+        headerImage={
+          <IconSymbol
+            size={220}
+            color="#808080"
+            name="chevron.left.forwardslash.chevron.right"
+            style={styles.headerImage}
+          />
+        }
+        headerTitle='I dags spil'
+        cached={false}
+      >
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Manglende funktion</ThemedText>
         <ThemedText>
@@ -93,7 +100,6 @@ export default function Screen() {
     </ParallaxScrollView>
     )
   }
-  */}
 
   useEffect(() => {
     const run = async () => {
@@ -102,6 +108,7 @@ export default function Screen() {
 
       try {
         const challenge = await challengeToday();
+        setLastChallengeDone(await AsyncStorage.getItem(LAST_CHALLENGE_DONE));
         setBearing(challenge.direction);
         setLoading(false);
       } catch (errorMessage) {
@@ -177,6 +184,29 @@ export default function Screen() {
     </ThemedView>
   );
 
+  if (lastChallengeDone === new Date().toISOString().split('T')[0]) return (
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerImage={
+        <IconSymbol
+          size={220}
+          color="#808080"
+          name="chevron.left.forwardslash.chevron.right"
+          style={styles.headerImage}
+        />
+      }
+      headerTitle='I dags spil'
+      cached={false}
+    >
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Udfordring allerede gennemført</ThemedText>
+        <ThemedText>
+          Du har allerede gennemført dagens udfordring, kom tilbage i morgen for en ny udfordring!
+        </ThemedText>
+      </ThemedView>
+    </ParallaxScrollView>
+  )
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -230,13 +260,19 @@ export default function Screen() {
         <ThemedText
           style={styles.button}
           onPress={() => {
-              if (username) {
-                createGame(username, getPoint(heading, bearing))
-                .then((status) => {
-                  alert(`Score indsendt: ${status}`);
+              if (username && token) {
+                createGame(getPoint(heading, bearing), token)
+                .then(async (status) => {
+                  await AsyncStorage.setItem(LAST_CHALLENGE_DONE, new Date().toISOString().split('T')[0]);
+                  setLastChallengeDone(new Date().toISOString().split('T')[0]);
+                  alert(`Score indsendt`);
                 })
                 .catch((error) => {
                   alert(`Fejl ved indsendelse: ${error}`);
+                  if (error.message === "User has already submitted a score for today's challenge") {
+                    AsyncStorage.setItem(LAST_CHALLENGE_DONE, new Date().toISOString().split('T')[0]);
+                    setLastChallengeDone(new Date().toISOString().split('T')[0]);
+                  }
                 });
               }
             }}

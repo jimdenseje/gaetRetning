@@ -1,20 +1,22 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
-import { ActivityIndicator, FlatList, Platform, StyleSheet } from 'react-native';
-
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import HighScoreItem from '@/components/ui/high-score-item';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Platform, StyleSheet } from 'react-native';
+import { fetchScores } from '../helper/Api';
 import { getLocalScores, LocalScore } from '../helper/LocalStore';
 
+const SCORES_KEY = "@scores";
+
 type ScoreEntry = {
-  player_name: string;
-  score: number;
-  challenge_date: string
+  username: string;
+  scoreValue: number;
+  challengeDate: string
 };
 
 type ScoresByDay = {
@@ -31,34 +33,6 @@ export default function Screen() {
   const [cached, setCached] = useState(true);
   const [scores, setScores] = useState<LocalScore[]>([]);
 
-  const SCORES_KEY = "@scores";
-  const API_URL = "https://spil.qeentu.com/jims/gaetRetningApi/leaderboard.php";
-
-  const normalizeScores = (data: Record<string, ScoreEntry[]>) => {
-    const result: Record<string, Array<ScoreEntry>> = {};
-    Object.entries(data).forEach(([day, arr]) => {
-      result[day] = arr
-        .sort((a, b) => b.score - a.score);
-    });
-    return result;
-  };
-
-  const fetchScores = async () => {
-    try {
-      const response = await fetch(API_URL, {signal: AbortSignal.timeout(10000)});
-      if (!response.ok) throw new Error("Failed to fetch scores");
-
-      const data = await response.json();
-      const normalized = normalizeScores(data);
-
-      setScoresByDay(normalized);
-      await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(normalized));
-      setCached(false);
-    } catch (err) {
-      //setError(err instanceof Error ? err.message : "An error occurred");
-    }
-  };
-
   const loadScores = async () => {
     try {
       const stored = await AsyncStorage.getItem(SCORES_KEY);
@@ -67,15 +41,17 @@ export default function Screen() {
 
       const netState = await NetInfo.fetch();
       if (netState.isConnected) {
-        await fetchScores();
+        let scores = await fetchScores();
+        if (!scores) throw new Error("Failed to fetch scores");
+        setScoresByDay(scores);
+        await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(scores));
+        setCached(false);
       } else {
         console.warn("No internet connection. Showing cached scores.");
-        //setError("No internet connection. Showing cached scores.");
       }
 
     } catch (err) {
       console.error("Error loading scores:", err);
-      //setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
     }
   };
@@ -85,7 +61,14 @@ export default function Screen() {
 
     const interval = setInterval(async () => {
       const netState = await NetInfo.fetch();
-      if (netState.isConnected) await fetchScores();
+      if (netState.isConnected) {
+        let scores = await fetchScores();
+        if (scores) {
+          setScoresByDay(scores);
+          await AsyncStorage.setItem(SCORES_KEY, JSON.stringify(scores));
+          setCached(false);
+        }
+      }
     }, 5_000);
 
     return () => {
@@ -143,9 +126,9 @@ export default function Screen() {
         data={scoresByDay['today'] || []}
         renderItem={({ item }) => (
           <HighScoreItem
-            name={item.player_name}
-            score={item.score}
-            maxScore={scoresByDay['today'] && scoresByDay['today'].length > 0 ? Math.max(...scoresByDay['today'].map(s => s.score)) : 0}
+            name={item.username}
+            score={item.scoreValue}
+            maxScore={scoresByDay['today'] && scoresByDay['today'].length > 0 ? Math.max(...scoresByDay['today'].map(s => s.scoreValue)) : 0}
           />
         )}
       />
@@ -166,9 +149,9 @@ export default function Screen() {
         data={scoresByDay['yesterday'] || []}
         renderItem={({ item }) => (
           <HighScoreItem
-            name={item.player_name}
-            score={item.score}
-            maxScore={scoresByDay['yesterday'] && scoresByDay['yesterday'].length > 0 ? Math.max(...scoresByDay['yesterday'].map(s => s.score)) : 0}
+            name={item.username}
+            score={item.scoreValue}
+            maxScore={scoresByDay['yesterday'] && scoresByDay['yesterday'].length > 0 ? Math.max(...scoresByDay['yesterday'].map(s => s.scoreValue)) : 0}
           />
         )}
       />

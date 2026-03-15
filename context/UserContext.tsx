@@ -1,49 +1,76 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
-  ReactNode,
+  PropsWithChildren,
   useEffect,
-  useState,
+  useState
 } from 'react';
 
-type UserContextType = {
+type AuthData = {
   username: string | null;
-  setUsername: (name: string) => Promise<void>;
+  token: string | null;
+  tokenCreatedAt: string | null;
+};
+
+type UserContextType = AuthData & {
+  setAuth: (username: string, token: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 export const UserContext = createContext<UserContextType>({
   username: null,
-  setUsername: async () => {},
+  token: null,
+  tokenCreatedAt: null,
+  setAuth: async () => {},
+  logout: async () => {},
 });
 
-type Props = {
-  children: ReactNode;
-};
+export function UserProvider({ children }: PropsWithChildren) {
+  const [authData, setAuthData] = useState<AuthData>({
+    username: null,
+    token: null,
+    tokenCreatedAt: null,
+  });
 
-export function UserProvider({ children }: Props) {
-  const [username, setUsernameState] = useState<string | null>(null);
-
-  // Load stored username
   useEffect(() => {
-    const loadUsername = async () => {
-      const stored = await AsyncStorage.getItem('username');
-      if (stored) setUsernameState(stored);
-
-      // For testing: clear username on app start
-      //setUsernameState("");
+    const loadAuth = async () => {
+      const stored = await AsyncStorage.getItem('authData');
+      if (stored) {
+        setAuthData(JSON.parse(stored));
+      }
     };
 
-    loadUsername();
+    loadAuth();
   }, []);
 
-  const setUsername = async (name: string) => {
-    console.log('Setting username:', name);
-    await AsyncStorage.setItem('username', name);
-    setUsernameState(name);
+  const setAuth = async (username: string, token: string) => {
+    const newAuth: AuthData = {
+      username,
+      token,
+      tokenCreatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    await AsyncStorage.setItem('authData', JSON.stringify(newAuth));
+    setAuthData(newAuth);
+  };
+
+  const logout = async () => {
+    await AsyncStorage.removeItem('authData');
+    setAuthData({
+      username: null,
+      token: null,
+      tokenCreatedAt: null,
+    });
   };
 
   return (
-    <UserContext.Provider value={{ username, setUsername }}>
+    <UserContext.Provider
+      value={{
+        ...authData,
+        setAuth,
+        logout,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

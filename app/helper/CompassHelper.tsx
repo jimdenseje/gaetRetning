@@ -1,5 +1,11 @@
 
 export function bearingToQuadrant(deg: number): string {
+  /* hvis deg er negativ eller større en 360, normaliseres det til [0, 360]
+  f.eks. -10 -> 350, 370 -> 10
+  tænker man at "(deg + 360) % 360" altid vil give det samme resultat så tager man fejl,
+  da tal mindre en -360 vil forblive negative,
+  da f.eks. -410 + 360 = -50, og -50 % 360 = -50
+  */
   deg = ((deg % 360) + 360) % 360;
 
   if (deg === 0) return "N";
