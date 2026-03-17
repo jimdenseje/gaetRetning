@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://localhost:7007/api/';
+export const API_BASE_URL = 'http://jimx02132.web.techcollege.dk/api/';
 
 export async function createGame(score: number, token: string): Promise<string> {
     const response = await fetch(API_BASE_URL + 'Score', {
