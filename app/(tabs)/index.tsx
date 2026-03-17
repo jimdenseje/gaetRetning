@@ -12,10 +12,7 @@ import { getPoint } from '../helper/GetPointHelper';
 import { addLocalScore } from '../helper/LocalStore';
 
 function randomInt(min: number, max: number): number {
-  const range = max - min;
-  const array = new Uint32Array(1);
-  crypto.getRandomValues(array);
-  return min + (array[0] % range);
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 export default function Screen() {
@@ -127,7 +124,10 @@ export default function Screen() {
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        return;
+      }
 
       subscription = await Location.watchPositionAsync(
         {

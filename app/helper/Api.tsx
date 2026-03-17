@@ -25,10 +25,7 @@ export async function createGame(score: number, token: string): Promise<string> 
 
 export async function challengeToday(): Promise<{ direction: number; challenge_date: string }> {
   const response = await fetch(
-    API_BASE_URL + "DailyChallenge/today",
-    {
-      signal: AbortSignal.timeout(10000)
-    }
+    API_BASE_URL + "DailyChallenge/today"
   );
 
   const data = await response.json();
@@ -61,10 +58,7 @@ const normalizeScores = (data: Record<string, ScoreEntry[]>) => {
 export const fetchScores = async () => {
   try {
     const response = await fetch(
-      API_BASE_URL + 'Score/leaderboard',
-      {
-        signal: AbortSignal.timeout(10000)
-      }
+      API_BASE_URL + 'Score/leaderboard'
     );
     if (!response.ok) throw new Error("Failed to fetch scores");
 

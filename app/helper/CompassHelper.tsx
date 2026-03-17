@@ -1,7 +1,7 @@
 
 export function bearingToQuadrant(deg: number): string {
-  if (deg <= 0 || deg >= 360)
-    throw new Error("Degree must be >=0 and <360");
+  if (deg < 0 || deg >= 360)
+    throw new Error("Degree must be >=0 and <360 degree was: " + deg);
 
   if (deg === 0) return "N";
   if (deg === 90) return "E";

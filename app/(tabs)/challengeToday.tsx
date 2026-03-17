@@ -147,7 +147,10 @@ export default function Screen() {
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        return;
+      }
 
       /*
       const location = await Location.getCurrentPositionAsync({});
